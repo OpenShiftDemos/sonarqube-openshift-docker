@@ -1,8 +1,8 @@
-# Sonarqube on OpenShift
+# SonarQube on OpenShift
 This repo contains all of the resources required to build an OpenShift-specific
-Docker image of Sonarqube.
+Docker image of SonarQube.
 
-It is inspired by the upstream Sonarqube Docker image:
+It is inspired by the upstream SonarQube Docker image:
 https://github.com/SonarSource/docker-sonarqube/tree/master/5.5
 
 ## Quick usage
@@ -16,7 +16,7 @@ OpenShift project:
     oc expose service sonarqube
 
 This will result in your OpenShift environment deploying the included PostgreSQL
-database with ephemeral storage and then deploying the Sonarqube image directly
+database with ephemeral storage and then deploying the SonarQube image directly
 from DockerHub.
 
 ## ToDos
