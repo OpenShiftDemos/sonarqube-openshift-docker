@@ -11,7 +11,7 @@ OpenShift project:
 
     oc new-app postgresql-ephemeral \
     -p POSTGRESQL_USER=sonar,POSTGRESQL_PASSWORD=sonar,POSTGRESQL_DATABASE=sonar
-    oc new-app docker.io/thoraxe/sonarqube:5.5 \
+    oc new-app docker.io/openshiftdemos/sonarqube:5.5 \
     -e SONARQUBE_JDBC_USERNAME=sonar,SONARQUBE_JDBC_PASSWORD=sonar,SONARQUBE_JDBC_URL=jdbc:postgresql://postgresql/sonar
     oc expose service sonarqube
 
