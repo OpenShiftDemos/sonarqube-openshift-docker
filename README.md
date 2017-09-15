@@ -3,19 +3,16 @@ This repo contains all of the resources required to build an OpenShift-specific
 Docker image of SonarQube.
 
 It is inspired by the upstream SonarQube Docker image:
-https://github.com/SonarSource/docker-sonarqube/tree/master/5.5
+https://github.com/SonarSource/docker-sonarqube/tree/master/6.5
 
 ## Quick usage
 You can do something like the following, assuming you are in an existing
 OpenShift project:
 
-    oc new-app postgresql-ephemeral \
-    -p POSTGRESQL_USER=sonar,POSTGRESQL_PASSWORD=sonar,POSTGRESQL_DATABASE=sonar
-    oc new-app docker.io/openshiftdemos/sonarqube:6.0 \
-    -e SONARQUBE_JDBC_USERNAME=sonar,SONARQUBE_JDBC_PASSWORD=sonar,SONARQUBE_JDBC_URL=jdbc:postgresql://postgresql/sonar
+    oc new-app docker.io/openshiftdemos/sonarqube:6.5
     oc expose service sonarqube
 
-This will result in your OpenShift environment deploying the included PostgreSQL
+This will result in your OpenShift environment deploying the embedded SQLite
 database with ephemeral storage and then deploying the SonarQube image directly
 from DockerHub.
 
