@@ -118,6 +118,8 @@ objects:
           volumeMounts:
           - mountPath: /opt/sonarqube/data
             name: sonarqube-data
+          - mountPath: /opt/sonarqube/extensions
+            name: sonarqube-extensions            
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         securityContext: {}
@@ -126,6 +128,9 @@ objects:
         - name: sonarqube-data
           persistentVolumeClaim:
             claimName: sonarqube-data
+        - name: sonarqube-extensions
+          persistentVolumeClaim:
+            claimName: sonarqube-extensions
     triggers:
     - type: ConfigChange
     - imageChangeParams:
@@ -145,14 +150,29 @@ objects:
     - ReadWriteOnce
     resources:
       requests:
-        storage: ${SONAR_VOLUME_CAPACITY}
+        storage: ${SONAR_DATA_VOLUME_CAPACITY}
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: sonarqube-extensions
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${SONAR_EXTENSIONS_VOLUME_CAPACITY}
 parameters:
 - displayName: SonarQube version
   value: "6.7"
   name: SONARQUBE_VERSION
   required: true
-- description: Volume space available for SonarQube
+- description: Volume space available for SonarQube Data
   displayName: SonarQube Volume Capacity
-  name: SONAR_VOLUME_CAPACITY
+  name: SONAR_DATA_VOLUME_CAPACITY
   required: true
   value: 1Gi
+- description: Volume space available for SonarQube Extensions (used for plugins)
+  displayName: SonarQube Extensions (plugins) Volume Capacity
+  name: SONAR_EXTENSIONS_VOLUME_CAPACITY
+  required: true
+  value: 1Gi    
