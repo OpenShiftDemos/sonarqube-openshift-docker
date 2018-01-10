@@ -1,203 +1,219 @@
-kind: Template
 apiVersion: v1
+kind: Template
+labels:
+  template: sonarqube-postgresql-template
+message: A Sonarqube service has been created in your project. You can access using admin/admin.
 metadata:
   annotations:
-    description: The SonarQube OpenShift template
-    tags: instant-app,sonarqube
-  name: sonarqube
-message: "Login to SonarQube with the default admin user: admin/admin"
+    description: |-
+      Sonarqube service, with PostgreSQL persistent storage.
+
+      NOTE: You must have persistent volumes available in your cluster to use this template.
+    openshift.io/display-name: SonarQube PostgreSQL (Persistent)
+    openshift.io/documentation-url: https://www.sonarqube.org/
+    openshift.io/long-description: This template deploys a SonarQube and PostgreSQL servers.
+    tags: instant-app,sonarqube,postgresql
+  creationTimestamp: null
+  name: sonarqube-postgresql
 objects:
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: sonarqube
-    labels:
-      app: sonarqube
-  spec:
-    ports:
-    - name: sonarqube
-      port: 9000
-      protocol: TCP
-      targetPort: 9000
-    selector:
-      app: sonarqube
-      deploymentconfig: sonarqube
-    sessionAffinity: None
-    type: ClusterIP
 - apiVersion: v1
   kind: Route
   metadata:
     annotations:
-      description: Route for SonarQube's http service.
-    name: sonarqube
-    labels:
-      app: sonarqube
+      template.openshift.io/expose-uri: http://{.spec.host}{.spec.path}
+    name: ${SONARQUBE_SERVICE_NAME}
   spec:
     to:
       kind: Service
-      name: sonarqube
+      name: ${SONARQUBE_SERVICE_NAME}
 - apiVersion: v1
-  kind: ImageStream
+  kind: PersistentVolumeClaim
   metadata:
-    labels:
-      app: sonarqube
-    name: sonarqube
+    name: ${SONARQUBE_SERVICE_NAME}-data
   spec:
-    tags:
-    - annotations:
-        description: The SonarQube Docker image
-        tags: sonarqube
-      from:
-        kind: DockerImage
-        name: openshiftdemos/sonarqube:${SONARQUBE_VERSION}
-      importPolicy: {}
-      name: ${SONARQUBE_VERSION}
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${DATA_VOLUME_CAPACITY}
 - apiVersion: v1
-  kind: DeploymentConfig
+  kind: PersistentVolumeClaim
   metadata:
-    labels:
-      app: sonarqube
-      deploymentconfig: sonarqube
-    name: sonarqube
+    name: ${SONARQUBE_SERVICE_NAME}-extensions
   spec:
-    replicas: 1
-    selector:
-      app: sonarqube
-      deploymentconfig: sonarqube
-    strategy:
-      resources: {}
-      rollingParams:
-        intervalSeconds: 1
-        maxSurge: 25%
-        maxUnavailable: 25%
-        timeoutSeconds: 600
-        updatePeriodSeconds: 1
-      type: Rolling
-    template:
-      metadata:
-        annotations:
-          openshift.io/container.sonarqube.image.entrypoint: '["./bin/run.sh"]'
-        creationTimestamp: null
-        labels:
-          app: sonarqube
-          deploymentconfig: sonarqube
-      spec:
-        containers:
-        - env:
-          - name: SONARQUBE_JDBC_PASSWORD
-            value: ${POSTGRESQL_PASSWORD}
-          - name: SONARQUBE_JDBC_URL
-            value: jdbc:postgresql://postgresql-sonarqube/sonar
-          - name: SONARQUBE_JDBC_USERNAME
-            value: sonar
-          image: ' '
-          imagePullPolicy: IfNotPresent
-          name: sonarqube
-          ports:
-          - containerPort: 9000
-            protocol: TCP
-          livenessProbe:
-            failureThreshold: 3
-            initialDelaySeconds: 60
-            periodSeconds: 20
-            successThreshold: 1
-            httpGet:
-              port: 9000
-              path: /
-            timeoutSeconds: 5
-          readinessProbe:
-            failureThreshold: 3
-            initialDelaySeconds: 60
-            periodSeconds: 20
-            successThreshold: 1
-            httpGet:
-              port: 9000
-              path: /
-            timeoutSeconds: 5
-          resources:
-            requests:
-              cpu: 200m
-              memory: 1Gi
-            limits:
-              cpu: 1
-              memory: 2Gi
-          terminationMessagePath: /dev/termination-log
-          volumeMounts:
-          - mountPath: /opt/sonarqube/data
-            name: sonarqube-data
-        dnsPolicy: ClusterFirst
-        restartPolicy: Always
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
-        volumes:
-        - name: sonarqube-data
-          persistentVolumeClaim:
-            claimName: sonarqube-data
-    triggers:
-    - type: ConfigChange
-    - imageChangeParams:
-        automatic: true
-        containerNames:
-        - sonarqube
-        from:
-          kind: ImageStreamTag
-          name: sonarqube:${SONARQUBE_VERSION}
-      type: ImageChange
-- apiVersion: v1
-  kind: Service
-  metadata:
-    name: postgresql-sonarqube
-    labels:
-      app: sonarqube
-  spec:
-    ports:
-    - name: postgresql
-      port: 5432
-      protocol: TCP
-      targetPort: 5432
-    selector:
-      app: sonarqube
-      deploymentconfig: postgresql-sonarqube
-    sessionAffinity: None
-    type: ClusterIP
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${EXTENSIONS_VOLUME_CAPACITY}
 - apiVersion: v1
   kind: DeploymentConfig
   metadata:
-    labels:
-      app: sonarqube
-      deploymentconfig: postgresql-sonarqube
-    name: postgresql-sonarqube
+    annotations:
+      template.alpha.openshift.io/wait-for-ready: "true"
+    name: ${SONARQUBE_SERVICE_NAME}
   spec:
     replicas: 1
     selector:
-      app: sonarqube
-      deploymentconfig: postgresql-sonarqube
+      name: ${SONARQUBE_SERVICE_NAME}
     strategy:
-      recreateParams:
-        timeoutSeconds: 600
-      resources: {}
       type: Recreate
     template:
       metadata:
         labels:
-          app: sonarqube
-          deploymentconfig: postgresql-sonarqube
+          name: ${SONARQUBE_SERVICE_NAME}
       spec:
         containers:
-        - env:
-          - name: POSTGRESQL_USER
-            value: sonar
-          - name: POSTGRESQL_PASSWORD
+        - capabilities: {}
+          env:
+          - name: SONARQUBE_JDBC_USERNAME
+            value: ${POSTGRESQL_USER}
+          - name: SONARQUBE_JDBC_PASSWORD
             value: ${POSTGRESQL_PASSWORD}
+          - name: SONARQUBE_JDBC_URL
+            value: jdbc:postgresql://${SONARQUBE_SERVICE_NAME}-postgresql:5432/sonarqube
+          image: 'tchughesiv/sonarqube-centos'
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9000
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /
+              port: 9000
+            initialDelaySeconds: 420
+            timeoutSeconds: 3
+          name: sonarqube
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 9000
+            initialDelaySeconds: 3
+            timeoutSeconds: 3
+          resources:
+            requests:
+              memory: ${SONARQUBE_MEMORY_LIMITS}
+            limits:
+              memory: ${SONARQUBE_MEMORY_LIMITS}
+          securityContext:
+            capabilities: {}
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+          volumeMounts:
+          - mountPath: /opt/sonarqube/data
+            name: ${SONARQUBE_SERVICE_NAME}-data
+          - mountPath: /opt/sonarqube/extensions
+            name: ${SONARQUBE_SERVICE_NAME}-extensions
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+        serviceAccountName: ${SONARQUBE_SERVICE_NAME}
+        volumes:
+        - name: ${SONARQUBE_SERVICE_NAME}-data
+          persistentVolumeClaim:
+            claimName: ${SONARQUBE_SERVICE_NAME}-data
+        - name: ${SONARQUBE_SERVICE_NAME}-extensions
+          persistentVolumeClaim:
+            claimName: ${SONARQUBE_SERVICE_NAME}-extensions
+    triggers:
+    - type: ConfigChange
+- apiVersion: v1
+  kind: ServiceAccount
+  metadata:
+    name: ${SONARQUBE_SERVICE_NAME}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: ${SONARQUBE_SERVICE_NAME}
+  spec:
+    ports:
+    - port: 9000
+      protocol: TCP
+      targetPort: 9000
+    selector:
+      name: ${SONARQUBE_SERVICE_NAME}
+    sessionAffinity: None
+    type: ClusterIP
+- apiVersion: v1
+  kind: Secret
+  metadata:
+    annotations:
+      template.openshift.io/expose-database_name: '{.data[''database-name'']}'
+      template.openshift.io/expose-password: '{.data[''database-password'']}'
+      template.openshift.io/expose-username: '{.data[''database-user'']}'
+    name: ${SONARQUBE_SERVICE_NAME}-postgresql
+  stringData:
+    database-name: sonarqube
+    database-password: ${POSTGRESQL_PASSWORD}
+    database-user: ${POSTGRESQL_USER}
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      template.openshift.io/expose-uri: postgres://{.spec.clusterIP}:{.spec.ports[?(.name=="postgresql")].port}
+    name: ${SONARQUBE_SERVICE_NAME}-postgresql
+  spec:
+    ports:
+    - name: postgresql
+      nodePort: 0
+      port: 5432
+      protocol: TCP
+      targetPort: 5432
+    selector:
+      name: ${SONARQUBE_SERVICE_NAME}-postgresql
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: ${SONARQUBE_SERVICE_NAME}-postgresql
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${POSTGRESQL_VOLUME_CAPACITY}
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      template.alpha.openshift.io/wait-for-ready: "true"
+    name: ${SONARQUBE_SERVICE_NAME}-postgresql
+  spec:
+    replicas: 1
+    selector:
+      name: ${SONARQUBE_SERVICE_NAME}-postgresql
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          name: ${SONARQUBE_SERVICE_NAME}-postgresql
+      spec:
+        containers:
+        - capabilities: {}
+          env:
+          - name: POSTGRESQL_USER
+            valueFrom:
+              secretKeyRef:
+                key: database-user
+                name: ${SONARQUBE_SERVICE_NAME}-postgresql
+          - name: POSTGRESQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: database-password
+                name: ${SONARQUBE_SERVICE_NAME}-postgresql
           - name: POSTGRESQL_DATABASE
-            value: sonar
+            valueFrom:
+              secretKeyRef:
+                key: database-name
+                name: ${SONARQUBE_SERVICE_NAME}-postgresql
           image: ' '
           imagePullPolicy: IfNotPresent
           livenessProbe:
-            failureThreshold: 3
             initialDelaySeconds: 30
-            periodSeconds: 10
-            successThreshold: 1
             tcpSocket:
               port: 5432
             timeoutSeconds: 1
@@ -211,31 +227,26 @@ objects:
               - /bin/sh
               - -i
               - -c
-              - psql -h 127.0.0.1 -U $POSTGRESQL_USER -q -d $POSTGRESQL_DATABASE -c 'SELECT 1'
-            failureThreshold: 3
+              - psql -h 127.0.0.1 -U $POSTGRESQL_USER -q -d $POSTGRESQL_DATABASE -c
+                'SELECT 1'
             initialDelaySeconds: 5
-            periodSeconds: 10
-            successThreshold: 1
             timeoutSeconds: 1
           resources:
             limits:
-              memory: 256Mi
+              memory: ${POSTGRESQL_MEMORY_LIMIT}
           securityContext:
             capabilities: {}
             privileged: false
           terminationMessagePath: /dev/termination-log
           volumeMounts:
           - mountPath: /var/lib/pgsql/data
-            name: postgresql-data
+            name: ${SONARQUBE_SERVICE_NAME}-postgresql
         dnsPolicy: ClusterFirst
         restartPolicy: Always
-        securityContext: {}
-        terminationGracePeriodSeconds: 30
         volumes:
-        - name: postgresql-data
+        - name: ${SONARQUBE_SERVICE_NAME}-postgresql
           persistentVolumeClaim:
-            claimName: postgresql-sonarqube-data
-    test: false
+            claimName: ${SONARQUBE_SERVICE_NAME}-postgresql
     triggers:
     - imageChangeParams:
         automatic: true
@@ -243,48 +254,59 @@ objects:
         - postgresql
         from:
           kind: ImageStreamTag
-          name: postgresql:9.5
-          namespace: openshift
+          name: postgresql:${POSTGRESQL_VERSION}
+          namespace: ${NAMESPACE}
+        lastTriggeredImage: ""
       type: ImageChange
     - type: ConfigChange
-- apiVersion: v1
-  kind: PersistentVolumeClaim
-  metadata:
-    name: postgresql-sonarqube-data
-  spec:
-    accessModes:
-    - ReadWriteOnce
-    resources:
-      requests:
-        storage: ${POSTGRESQL_VOLUME_CAPACITY}
-- apiVersion: v1
-  kind: PersistentVolumeClaim
-  metadata:
-    name: sonarqube-data
-  spec:
-    accessModes:
-    - ReadWriteOnce
-    resources:
-      requests:
-        storage: ${SONAR_VOLUME_CAPACITY}
 parameters:
-- displayName: SonarQube version
-  value: "6.7"
-  name: SONARQUBE_VERSION
+- description: The name of the OpenShift Service exposed for the SonarQube container.
+  displayName: SonarQube Service Name
+  name: SONARQUBE_SERVICE_NAME
+  value: sonar
+- description: Volume space available for data, e.g. 512Mi, 2Gi.
+  displayName: Data Volume Capacity
+  name: DATA_VOLUME_CAPACITY
   required: true
-- description: Password for SonarQube Server PostgreSQL backend
-  displayName: SonarQube's PostgreSQL Password
+  value: 256Mi
+- description: Volume space available for extensions, e.g. 512Mi, 2Gi.
+  displayName: Extensions Volume Capacity
+  name: EXTENSIONS_VOLUME_CAPACITY
+  required: true
+  value: 256Mi
+- description: SonarQube container memory limits.
+  displayName: Memory Limits
+  name: SONARQUBE_MEMORY_LIMITS
+  required: true
+  value: 2Gi
+- description: Username for PostgreSQL backend
+  displayName: PostgreSQL Username
+  from: sonar[a-zA-Z0-9]{4}
+  generate: expression
+  name: POSTGRESQL_USER
+  required: true
+- description: Password for PostgreSQL backend
+  displayName: PostgreSQL Password
   from: '[a-zA-Z0-9]{16}'
   generate: expression
   name: POSTGRESQL_PASSWORD
   required: true
-- description: Volume space available for PostgreSQL
+- description: Volume space available for PostgreSQL, e.g. 512Mi, 2Gi.
   displayName: PostgreSQL Volume Capacity
   name: POSTGRESQL_VOLUME_CAPACITY
   required: true
   value: 1Gi
-- description: Volume space available for SonarQube
-  displayName: SonarQube Volume Capacity
-  name: SONAR_VOLUME_CAPACITY
+- description: Maximum amount of memory PostgreSQL container can use.
+  displayName: PostgreSQL Memory Limit
+  name: POSTGRESQL_MEMORY_LIMIT
   required: true
-  value: 1Gi
+  value: 512Mi
+- description: Version of PostgreSQL image to be used (9.2, 9.4, 9.5 or latest).
+  displayName: Version of PostgreSQL Image
+  name: POSTGRESQL_VERSION
+  required: true
+  value: "9.5"
+- description: The OpenShift Namespace where the ImageStream resides.
+  displayName: Namespace
+  name: NAMESPACE
+  value: openshift
