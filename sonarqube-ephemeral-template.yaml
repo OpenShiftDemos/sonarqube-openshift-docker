@@ -1,0 +1,102 @@
+apiVersion: v1
+kind: Template
+labels:
+  template: sonarqube-ephemeral-template
+message: A Sonarqube service has been created in your project. You can access using admin/admin.
+metadata:
+  annotations:
+    description: |-
+      Sonarqube service, with ephemeral storage.
+
+      NOTE: Data will not be persistent across restarts
+    openshift.io/display-name: SonarQube (Ephemeral)
+    openshift.io/documentation-url: https://www.sonarqube.org/
+    openshift.io/long-description: This template deploys a SonarQube server.
+    tags: instant-app,sonarqube
+  creationTimestamp: null
+  name: sonarqube-ephemeral
+objects:
+- apiVersion: v1
+  kind: Route
+  metadata:
+    annotations:
+      template.openshift.io/expose-uri: http://{.spec.host}{.spec.path}
+    name: ${SONARQUBE_SERVICE_NAME}
+  spec:
+    to:
+      kind: Service
+      name: ${SONARQUBE_SERVICE_NAME}
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    annotations:
+      template.alpha.openshift.io/wait-for-ready: "true"
+    name: ${SONARQUBE_SERVICE_NAME}
+  spec:
+    replicas: 1
+    selector:
+      name: ${SONARQUBE_SERVICE_NAME}
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          name: ${SONARQUBE_SERVICE_NAME}
+      spec:
+        containers:
+        - capabilities: {}
+          image: 'tchughesiv/sonarqube-centos'
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9000
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 30
+            httpGet:
+              path: /
+              port: 9000
+            initialDelaySeconds: 420
+            timeoutSeconds: 3
+          name: sonarqube
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 9000
+            initialDelaySeconds: 3
+            timeoutSeconds: 3
+          resources:
+            requests:
+              memory: ${SONARQUBE_MEMORY_LIMITS}
+            limits:
+              memory: ${SONARQUBE_MEMORY_LIMITS}
+          securityContext:
+            capabilities: {}
+            privileged: false
+          terminationMessagePath: /dev/termination-log
+        dnsPolicy: ClusterFirst
+        restartPolicy: Always
+    triggers:
+    - type: ConfigChange
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: ${SONARQUBE_SERVICE_NAME}
+  spec:
+    ports:
+    - port: 9000
+      protocol: TCP
+      targetPort: 9000
+    selector:
+      name: ${SONARQUBE_SERVICE_NAME}
+    sessionAffinity: None
+    type: ClusterIP
+parameters:
+- description: The name of the OpenShift Service exposed for the SonarQube container.
+  displayName: SonarQube Service Name
+  name: SONARQUBE_SERVICE_NAME
+  value: sonar
+- description: SonarQube container memory limits.
+  displayName: Memory Limits
+  name: SONARQUBE_MEMORY_LIMITS
+  required: true
+  value: 2Gi
