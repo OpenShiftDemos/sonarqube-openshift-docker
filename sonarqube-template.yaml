@@ -118,6 +118,8 @@ objects:
           volumeMounts:
           - mountPath: /opt/sonarqube/data
             name: sonarqube-data
+          - mountPath: /opt/sonarqube/extensions/plugins
+            name: sonarqube-plugins
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         securityContext: {}
@@ -126,6 +128,9 @@ objects:
         - name: sonarqube-data
           persistentVolumeClaim:
             claimName: sonarqube-data
+        - name: sonarqube-plugins
+          persistentVolumeClaim:
+            claimName: sonarqube-plugins
     triggers:
     - type: ConfigChange
     - imageChangeParams:
@@ -140,6 +145,16 @@ objects:
   kind: PersistentVolumeClaim
   metadata:
     name: sonarqube-data
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: ${SONAR_VOLUME_CAPACITY}
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: sonarqube-plugins
   spec:
     accessModes:
     - ReadWriteOnce
