@@ -3,7 +3,7 @@ FROM jboss/base-jdk:8
 MAINTAINER Erik Jacobs <erikmjacobs@gmail.com>
 MAINTAINER Siamak Sadeghianfar <siamaksade@gmail.com>
 
-ENV SONAR_VERSION=6.7 \
+ENV SONAR_VERSION=6.37 \
     SONARQUBE_HOME=/opt/sonarqube \
     SONARQUBE_JDBC_USERNAME=sonar \
     SONARQUBE_JDBC_PASSWORD=sonar \
