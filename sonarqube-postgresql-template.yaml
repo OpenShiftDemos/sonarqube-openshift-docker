@@ -127,6 +127,10 @@ objects:
             name: sonarqube-data
           - mountPath: /opt/sonarqube/extensions/plugins
             name: sonarqube-extensions
+          - mountPath: /opt/sonarqube/conf
+            name: sonarqube-conf
+          - mountPath: /opt/sonarqube/logs
+            name: sonarqube-conf
         dnsPolicy: ClusterFirst
         restartPolicy: Always
         securityContext: {}
@@ -138,6 +142,12 @@ objects:
         - name: sonarqube-extensions
           persistentVolumeClaim:
             claimName: sonarqube-extensions
+        - name: sonarqube-conf
+          persistentVolumeClaim:
+            claimName: sonarqube-conf
+        - name: sonarqube-logs
+          persistentVolumeClaim:
+            claimName: sonarqube-logs
     triggers:
     - type: ConfigChange
     - imageChangeParams:
@@ -282,9 +292,29 @@ objects:
     resources:
       requests:
         storage: 1Gi
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: sonarqube-conf
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
+- apiVersion: v1
+  kind: PersistentVolumeClaim
+  metadata:
+    name: sonarqube-logs
+  spec:
+    accessModes:
+    - ReadWriteOnce
+    resources:
+      requests:
+        storage: 1Gi
 parameters:
 - displayName: SonarQube version
-  value: "6.7"
+  value: "7.0"
   name: SONARQUBE_VERSION
   required: true
 - description: Password for SonarQube Server PostgreSQL backend
