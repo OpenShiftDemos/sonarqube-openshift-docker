@@ -55,6 +55,8 @@ objects:
 - apiVersion: v1
   kind: DeploymentConfig
   metadata:
+    annotations:
+      app.openshift.io/connects-to: postgresql-sonarqube
     labels:
       app: sonarqube
       deploymentconfig: sonarqube
