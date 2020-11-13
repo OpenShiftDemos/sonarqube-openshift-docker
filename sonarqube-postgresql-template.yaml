@@ -136,7 +136,7 @@ objects:
         - sonarqube
         from:
           kind: ImageStreamTag
-          name: sonarqube:${SONARQUBE_VERSION}
+          name: quay.io/pittar/sonarqube:${SONARQUBE_VERSION}
       type: ImageChange
 - apiVersion: v1
   kind: Service
@@ -311,9 +311,9 @@ parameters:
   displayName: PostgreSQL Volume Capacity
   name: POSTGRESQL_VOLUME_CAPACITY
   required: true
-  value: 1Gi
+  value: 2Gi
 - description: Volume space available for SonarQube
   displayName: SonarQube Volume Capacity
   name: SONAR_VOLUME_CAPACITY
   required: true
-  value: 1Gi
+  value: 2Gi
