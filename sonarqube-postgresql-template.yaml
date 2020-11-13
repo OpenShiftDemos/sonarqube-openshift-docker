@@ -49,7 +49,7 @@ objects:
         tags: sonarqube
       from:
         kind: DockerImage
-        name: openshiftdemos/sonarqube:${SONARQUBE_VERSION}
+        name: sonarqube:${SONARQUBE_VERSION}
       importPolicy: {}
       name: ${SONARQUBE_VERSION}
 - apiVersion: v1
@@ -294,7 +294,7 @@ objects:
         storage: 1Gi
 parameters:
 - displayName: SonarQube version
-  value: "7.0"
+  value: "7.9-community"
   name: SONARQUBE_VERSION
   required: true
 - displayName: PostgreSQL version
