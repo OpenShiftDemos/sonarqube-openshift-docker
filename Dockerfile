@@ -1,5 +1,5 @@
-FROM java:11
-#FROM default-route-openshift-image-registry.apps.cluster-7eb4.7eb4.example.opentlc.com/openshift/java:11
+#FROM java:11
+FROM default-route-openshift-image-registry.apps.cluster-7eb4.7eb4.example.opentlc.com/openshift/java:11
 #FROM jboss/base-jdk:11
 
 MAINTAINER Erik Jacobs <erikmjacobs@gmail.com>
