@@ -1,4 +1,5 @@
-FROM jboss/base-jdk:11
+FROM openshift/java:11
+#FROM jboss/base-jdk:11
 
 MAINTAINER Erik Jacobs <erikmjacobs@gmail.com>
 MAINTAINER Siamak Sadeghianfar <siamaksade@gmail.com>
