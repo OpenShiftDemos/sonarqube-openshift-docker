@@ -1,4 +1,4 @@
-FROM image-registry.openshift-image-registry.svc.cluster.local:5000/openshift/java:11
+FROM registry.redhat.io/ubi8/openjdk-11:latest
 #FROM default-route-openshift-image-registry.apps.cluster-7eb4.7eb4.example.opentlc.com/openshift/java:11
 #FROM jboss/base-jdk:11
 
